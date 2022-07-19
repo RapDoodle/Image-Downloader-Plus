@@ -11,6 +11,7 @@ from core.downloader import download_images
 from core.crawler import crawl_image_urls
 from tqdm import tqdm
 import pandas as pd
+from selenium.common.exceptions import WebDriverException
 
 DEFAULT_STARTING_NUMBER = 1
 
@@ -210,18 +211,24 @@ if __name__ == '__main__':
             if os.path.exists(dst_dir):
                 shutil.rmtree(dst_dir)
 
-            crawled_urls = crawl_image_urls(keywords=keyword,
-                                            engine=args.engine, max_number=args.max_number,
-                                            face_only=args.face_only, safe_mode=args.safe_mode,
+            try:
+                crawled_urls = crawl_image_urls(keywords=keyword,
+                                                engine=args.engine, max_number=args.max_number,
+                                                face_only=args.face_only, safe_mode=args.safe_mode,
+                                                proxy_type=args.proxy_type, proxy=args.proxy,
+                                                browser=args.driver, image_type=args.type, 
+                                                color=args.color, quiet=not args.verbose)
+                images_len = download_images(image_urls=crawled_urls, dst_dir=dst_dir,
+                                            concurrency=args.num_threads, timeout=args.timeout,
                                             proxy_type=args.proxy_type, proxy=args.proxy,
-                                            browser=args.driver, image_type=args.type, 
-                                            color=args.color, quiet=not args.verbose)
-            images_len = download_images(image_urls=crawled_urls, dst_dir=dst_dir,
-                                         concurrency=args.num_threads, timeout=args.timeout,
-                                         proxy_type=args.proxy_type, proxy=args.proxy,
-                                         file_prefix=args.engine)
-        # Add prefix
-            if images_len >= args.required_number:
+                                            file_prefix=args.engine)
+            except WebDriverException as e:
+                print('Error caught')
+                # Handle more errors
+                continue 
+
+            # TO-DO: Add prefix
+            if args.required_number is not None and images_len >= args.required_number:
                 if args.trim_size:
                     files = os.listdir(dst_dir)
                     if len(files) > args.required_number:
