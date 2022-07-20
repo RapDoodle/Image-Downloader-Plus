@@ -6,3 +6,5 @@ PyQt5
 tqdm
 pandas
 openpyxl
+numpy
+opencv-python
