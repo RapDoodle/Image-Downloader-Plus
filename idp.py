@@ -258,91 +258,96 @@ if __name__ == '__main__':
     # Crawl and download
     progbar = tqdm(keywords, ncols=75, unit='keyword')
     for index, keyword in enumerate(progbar):
-        progbar.set_description(keyword)
-        vidx = index + args.begin
+        try:
+            progbar.set_description(keyword)
+            vidx = index + args.begin
 
-        if args.include_index:
-            dst_dir = os.path.join(args.output, f'{str(vidx).zfill(num_digits)}_{keyword}')
-        else:
-            dst_dir = os.path.join(args.output, keyword)
-
-        for attempt in range(args.max_attempts):
-            # When there are more attempts available, remove the downloaded images
-            if os.path.exists(dst_dir):
-                shutil.rmtree(dst_dir)
+            if args.include_index:
+                dst_dir = os.path.join(args.output, f'{str(vidx).zfill(num_digits)}_{keyword}')
             else:
-                os.mkdir(dst_dir)
+                dst_dir = os.path.join(args.output, keyword)
 
-            try:
-                crawled_urls = crawl_image_urls(keywords=keyword,
-                                                engine=args.engine, max_number=args.max_number,
-                                                face_only=args.face_only, safe_mode=args.safe_mode,
+            for attempt in range(args.max_attempts):
+                # When there are more attempts available, remove the downloaded images
+                if os.path.exists(dst_dir):
+                    shutil.rmtree(dst_dir)
+                else:
+                    os.mkdir(dst_dir)
+
+                try:
+                    crawled_urls = crawl_image_urls(keywords=keyword,
+                                                    engine=args.engine, max_number=args.max_number,
+                                                    face_only=args.face_only, safe_mode=args.safe_mode,
+                                                    proxy_type=args.proxy_type, proxy=args.proxy,
+                                                    browser=args.driver, image_type=args.type, 
+                                                    color=args.color, quiet=not args.verbose)
+                    images_len = download_images(image_urls=crawled_urls, dst_dir=dst_dir,
+                                                concurrency=args.num_threads, timeout=args.timeout,
                                                 proxy_type=args.proxy_type, proxy=args.proxy,
-                                                browser=args.driver, image_type=args.type, 
-                                                color=args.color, quiet=not args.verbose)
-                images_len = download_images(image_urls=crawled_urls, dst_dir=dst_dir,
-                                             concurrency=args.num_threads, timeout=args.timeout,
-                                             proxy_type=args.proxy_type, proxy=args.proxy,
-                                             file_prefix=None, format_filter=args.format_filter,
-                                             min_dim=args.min_dim)
-            except WebDriverException as e:
-                logging.error(str(e).strip())
-                # Handle more errors
-                continue 
+                                                file_prefix=None, format_filter=args.format_filter,
+                                                min_dim=args.min_dim)
+                except WebDriverException as e:
+                    logging.error(str(e).strip())
+                    # Handle more errors
+                    continue 
 
-            if args.required_number is not None:
-                # User specified the number of images required
-                if images_len >= args.required_number:
-                    # Skip subsequent attempts
-                    break
-                elif attempt == args.max_attempts - 1:
-                    # Reaching the last attempt
-                    logging.error(f'Only downloaded {images_len} images. But {args.required_number} ' + 
-                                  f'images are required for keyword: {keyword} ({vidx}).')
+                if args.required_number is not None:
+                    # User specified the number of images required
+                    if images_len >= args.required_number:
+                        # Skip subsequent attempts
+                        break
+                    elif attempt == args.max_attempts - 1:
+                        # Reaching the last attempt
+                        logging.error(f'Only downloaded {images_len} images. But {args.required_number} ' + 
+                                    f'images are required for keyword: {keyword} ({vidx}).')
 
-        # Sorting (optional) and renaming to prefix
-        # Sorting options: resolution, rank
-        img_files = os.listdir(dst_dir)
-        sort_criteria = []
-        if args.sort[0] == 'resolution':
-            for img in img_files:
-                with open(os.path.join(dst_dir, img), 'rb') as img:
-                    im = np.asarray(bytearray(img.read()), dtype="uint8")
-                    im = cv2.imdecode(im, cv2.IMREAD_COLOR)
-                    height, width = im.shape[:2]
-                    sort_criteria.append(height*width)
-        elif args.sort[0] == 'rank':
-            sort_criteria = [int(re.search(RELEVANCE_REGEX, fn).group(0)) for fn in img_files]
-        
-        # Sort the files in ascending (asc) order
-        sorted_files = [fn for _, fn in sorted(zip(sort_criteria, img_files))]
-        # Reverse the order if descending (desc) is specified
-        if args.sort[1] == 'desc':
-            sorted_files = sorted_files[::-1]
+            # Sorting (optional) and renaming to prefix
+            # Sorting options: resolution, rank
+            img_files = os.listdir(dst_dir)
+            sort_criteria = []
+            if args.sort[0] == 'resolution':
+                for img in img_files:
+                    with open(os.path.join(dst_dir, img), 'rb') as img:
+                        im = np.asarray(bytearray(img.read()), dtype="uint8")
+                        im = cv2.imdecode(im, cv2.IMREAD_COLOR)
+                        height, width = im.shape[:2]
+                        sort_criteria.append(height*width)
+            elif args.sort[0] == 'rank':
+                sort_criteria = [int(re.search(RELEVANCE_REGEX, fn).group(0)) for fn in img_files]
+            
+            # Sort the files in ascending (asc) order
+            sorted_files = [fn for _, fn in sorted(zip(sort_criteria, img_files))]
+            # Reverse the order if descending (desc) is specified
+            if args.sort[1] == 'desc':
+                sorted_files = sorted_files[::-1]
 
-        # Remove extra images
-        if args.remove_extra:
-            # When specified to reduce the number of images needed using --remove-extra
-            if len(sorted_files) > args.required_number:
-                for fn in sorted_files[args.required_number:]:
-                    os.remove(os.path.join(dst_dir, fn))
-            # Also remove from the list
-            sorted_files = sorted_files[:args.required_number]
+            # Remove extra images
+            if args.remove_extra:
+                # When specified to reduce the number of images needed using --remove-extra
+                if len(sorted_files) > args.required_number:
+                    for fn in sorted_files[args.required_number:]:
+                        os.remove(os.path.join(dst_dir, fn))
+                # Also remove from the list
+                sorted_files = sorted_files[:args.required_number]
 
-        # Rename the files
-        curr_file_prefix = args.file_prefix
-        folder_num_digits = len(str(len(sorted_files)))
-        if curr_file_prefix is None:
-            # If no prefix is specified, the keyword will be used as the prefix
-            curr_file_prefix = keyword
-        for fi, old_fn in enumerate(sorted_files):
-            old_fp = os.path.join(dst_dir, old_fn)
-            # NOTE: Files like example.tar.gz may have problems, but that's not an image
-            file_suffix = pathlib.Path(old_fp).suffix
-            # The new filenames will be Prefix01, Prefix02, ...
-            new_fp = os.path.join(dst_dir, f'{curr_file_prefix}{str(fi+1).zfill(folder_num_digits)}')
-            if len(file_suffix) > 0:
-                new_fp = f'{new_fp}{file_suffix}'
-            shutil.move(old_fp, new_fp)
+            # Rename the files
+            curr_file_prefix = args.file_prefix
+            folder_num_digits = len(str(len(sorted_files)))
+            if curr_file_prefix is None:
+                # If no prefix is specified, the keyword will be used as the prefix
+                curr_file_prefix = keyword
+            for fi, old_fn in enumerate(sorted_files):
+                old_fp = os.path.join(dst_dir, old_fn)
+                # NOTE: Files like example.tar.gz may have problems, but that's not an image
+                file_suffix = pathlib.Path(old_fp).suffix
+                # The new filenames will be Prefix01, Prefix02, ...
+                new_fp = os.path.join(dst_dir, f'{curr_file_prefix}{str(fi+1).zfill(folder_num_digits)}')
+                if len(file_suffix) > 0:
+                    new_fp = f'{new_fp}{file_suffix}'
+                shutil.move(old_fp, new_fp)
+        except Exception as e:
+            msg = f'Failed to complete keyword {keyword}. Cause: {e}'
+            eprint(msg)
+            logging.error(msg)
     
     print("Done.")
