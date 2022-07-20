@@ -1,19 +1,27 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import sys
 import shutil
+import pathlib
+import logging
 import argparse
+import numpy as np
+import pandas as pd
+import cv2
+from tqdm import tqdm
+from selenium.common.exceptions import WebDriverException
+
 from core.image_downloader import (
     get_arg_parser,
     process_proxy
 )
 from core.downloader import download_images
 from core.crawler import crawl_image_urls
-from tqdm import tqdm
-import pandas as pd
-from selenium.common.exceptions import WebDriverException
+
 
 DEFAULT_STARTING_NUMBER = 1
+RELEVANCE_REGEX = re.compile('[0-9]+')
 
 
 def eprint(*args, **kwargs):
@@ -31,6 +39,12 @@ if __name__ == '__main__':
         type=str, 
         help='Keywords separated by comma (,).'
     )
+    parser.add_argument(
+        '--format-filter', 
+        metavar='STRING', 
+        required=False,
+        default='jpg,jpeg,png,webp',
+        help='case insensitive formats separated by comma (,)')
     parser.add_argument(
         '--file', 
         '-f',
@@ -80,22 +94,6 @@ if __name__ == '__main__':
         default=False,
         help='Exclude the header from the input file.')
     parser.add_argument(
-        '--echo-only', 
-        action='store_true', 
-        required=False, 
-        help='Only output the keywords in comma-separated format.')
-    parser.add_argument(
-        '--trim-size', 
-        action='store_true', 
-        required=False, 
-        help='Only keep the minimum number of images.')
-    parser.add_argument(
-        '--starting-number', 
-        metavar='INT',
-        default=DEFAULT_STARTING_NUMBER,
-        type=int,
-        help='Your preference of the starting number (default: 1).')
-    parser.add_argument(
         '--max-attempts', 
         metavar='INT', 
         required=False, 
@@ -108,6 +106,41 @@ if __name__ == '__main__':
         default=None,
         type=int,
         help='Required number of images to download for the keywords (default: any).')
+    parser.add_argument(
+        '--file-prefix', 
+        metavar='STRING', 
+        required=False, 
+        default=None,
+        type=str, 
+        help='File prefix (default: current keyword).')
+    parser.add_argument(
+        '--min-dim', 
+        metavar='STRING', 
+        required=False,
+        default='0,0',
+        help='Minimum dimension of the image (default: none)')
+    parser.add_argument(
+        '--sort', 
+        metavar='STRING', 
+        required=False,
+        default='rank,asc',
+        help='The criteria for sorting (default: rank,asc). Example: resolution,desc')
+    parser.add_argument(
+        '--echo-only', 
+        action='store_true', 
+        required=False, 
+        help='Only output the keywords in comma-separated format.')
+    parser.add_argument(
+        '--remove-extra', 
+        action='store_true', 
+        required=False, 
+        help='Only keep the minimum number of images.')
+    parser.add_argument(
+        '--starting-number', 
+        metavar='INT',
+        default=DEFAULT_STARTING_NUMBER,
+        type=int,
+        help='Your preference of the starting number (default: 1).')
     parser.add_argument(
         '--verbose', 
         action='store_true', 
@@ -128,6 +161,32 @@ if __name__ == '__main__':
     # Set the desired args.proxy_type and args.proxy
     process_proxy(args)
     # print(args)
+    
+    # Handle allowed file formats
+    args.format_filter = args.format_filter.split(',')
+    # jpg is an alias for jpeg
+    if 'jpg' in args.format_filter and 'jpeg' not in args.format_filter:
+        args.format_filter.append('jpeg')
+
+    # Handle input for minimum image dimensions
+    args.min_dim = [int(x) for x in args.min_dim.split(',')]
+    if len(args.min_dim) != 2:
+        eprint('Error: incorrect input for dimension')
+        exit()
+
+    # Handle sorting
+    args.sort = args.sort.split(',')
+    if len(args.min_dim) != 2:
+        eprint('Error: incorrect input for sorting')
+        exit()
+    if args.sort[0] not in ['rank', 'resolution']:
+        eprint(f'Error: unknown sorting method {args.sort[0]}')
+        exit()
+
+    # Configure the logger
+    logging.basicConfig(filename='error.log', level=logging.ERROR,
+                        format='[%(asctime)s] %(message)s', 
+                        datefmt='%Y/%m/%d %I:%M:%S %p')
 
     if args.input_type is None:
         # Determine the input type
@@ -200,9 +259,10 @@ if __name__ == '__main__':
     progbar = tqdm(keywords, ncols=75, unit='keyword')
     for index, keyword in enumerate(progbar):
         progbar.set_description(keyword)
+        vidx = index + args.begin
 
         if args.include_index:
-            dst_dir = os.path.join(args.output, f'{str(index+args.begin).zfill(num_digits)}_{keyword}')
+            dst_dir = os.path.join(args.output, f'{str(vidx).zfill(num_digits)}_{keyword}')
         else:
             dst_dir = os.path.join(args.output, keyword)
 
@@ -210,6 +270,8 @@ if __name__ == '__main__':
             # When there are more attempts available, remove the downloaded images
             if os.path.exists(dst_dir):
                 shutil.rmtree(dst_dir)
+            else:
+                os.mkdir(dst_dir)
 
             try:
                 crawled_urls = crawl_image_urls(keywords=keyword,
@@ -219,21 +281,68 @@ if __name__ == '__main__':
                                                 browser=args.driver, image_type=args.type, 
                                                 color=args.color, quiet=not args.verbose)
                 images_len = download_images(image_urls=crawled_urls, dst_dir=dst_dir,
-                                            concurrency=args.num_threads, timeout=args.timeout,
-                                            proxy_type=args.proxy_type, proxy=args.proxy,
-                                            file_prefix=args.engine)
+                                             concurrency=args.num_threads, timeout=args.timeout,
+                                             proxy_type=args.proxy_type, proxy=args.proxy,
+                                             file_prefix=None, format_filter=args.format_filter,
+                                             min_dim=args.min_dim)
             except WebDriverException as e:
-                print('Error caught')
+                logging.error(str(e).strip())
                 # Handle more errors
                 continue 
 
-            # TO-DO: Add prefix
-            if args.required_number is not None and images_len >= args.required_number:
-                if args.trim_size:
-                    files = os.listdir(dst_dir)
-                    if len(files) > args.required_number:
-                        for filename in files[args.required_number:]:
-                            os.remove(os.path.join(dst_dir, filename))
-                break
-            
+            if args.required_number is not None:
+                # User specified the number of images required
+                if images_len >= args.required_number:
+                    # Skip subsequent attempts
+                    break
+                elif attempt == args.max_attempts - 1:
+                    # Reaching the last attempt
+                    logging.error(f'Only downloaded {images_len} images. But {args.required_number} ' + 
+                                  f'images are required for keyword: {keyword} ({vidx}).')
+
+        # Sorting (optional) and renaming to prefix
+        # Sorting options: resolution, rank
+        img_files = os.listdir(dst_dir)
+        sort_criteria = []
+        if args.sort[0] == 'resolution':
+            for img in img_files:
+                with open(os.path.join(dst_dir, img), 'rb') as img:
+                    im = np.asarray(bytearray(img.read()), dtype="uint8")
+                    im = cv2.imdecode(im, cv2.IMREAD_COLOR)
+                    height, width = im.shape[:2]
+                    sort_criteria.append(height*width)
+        elif args.sort[0] == 'rank':
+            sort_criteria = [int(re.search(RELEVANCE_REGEX, fn).group(0)) for fn in img_files]
+        
+        # Sort the files in ascending (asc) order
+        sorted_files = [fn for _, fn in sorted(zip(sort_criteria, img_files))]
+        # Reverse the order if descending (desc) is specified
+        if args.sort[1] == 'desc':
+            sorted_files = sorted_files[::-1]
+
+        # Remove extra images
+        if args.remove_extra:
+            # When specified to reduce the number of images needed using --remove-extra
+            if len(sorted_files) > args.required_number:
+                for fn in sorted_files[args.required_number:]:
+                    os.remove(os.path.join(dst_dir, fn))
+            # Also remove from the list
+            sorted_files = sorted_files[:args.required_number]
+
+        # Rename the files
+        curr_file_prefix = args.file_prefix
+        folder_num_digits = len(str(len(sorted_files)))
+        if curr_file_prefix is None:
+            # If no prefix is specified, the keyword will be used as the prefix
+            curr_file_prefix = keyword
+        for fi, old_fn in enumerate(sorted_files):
+            old_fp = os.path.join(dst_dir, old_fn)
+            # NOTE: Files like example.tar.gz may have problems, but that's not an image
+            file_suffix = pathlib.Path(old_fp).suffix
+            # The new filenames will be Prefix01, Prefix02, ...
+            new_fp = os.path.join(dst_dir, f'{curr_file_prefix}{str(fi+1).zfill(folder_num_digits)}')
+            if len(file_suffix) > 0:
+                new_fp = f'{new_fp}{file_suffix}'
+            shutil.move(old_fp, new_fp)
+    
     print("Done.")
