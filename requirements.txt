@@ -2,7 +2,6 @@ future
 PySocks
 requests
 selenium
-PyQt5
 tqdm
 pandas
 openpyxl
