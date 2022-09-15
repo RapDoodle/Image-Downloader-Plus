@@ -15,12 +15,15 @@ Enhanced version of sczhengyabin's Image Downloader. Added another invocation la
 The command includes command from sczhengyabin's Image Downloader as well as the command provided in this Image Downloader Plus. The command may seem daunting. But don't be afraid, there aren't much arguments you need to specify. I recommend jumping directly to the next section on examples
 
 ```bash
-usage: crawl.py [-h] [--engine {Google,Bing,Baidu}] [--driver {chrome_headless,chrome,phantomjs}] [--max-number MAX_NUMBER] [--num-threads NUM_THREADS]
-                [--timeout TIMEOUT] [--output OUTPUT] [--safe-mode] [--face-only] [--proxy_http PROXY_HTTP] [--proxy_socks5 PROXY_SOCKS5]
-                [--type {clipart,linedrawing,photograph}] [--color COLOR] [--engines STRING] [--keywords STRING] [--format-filter STRING] [--file DIR]    
-                [--input-type {txt,csv,tsv,excel,stdin,cmd}] [--begin INT] [--end INT] [--column-index INT] [--column-name STRING] [--exclude-header]     
-                [--max-attempts INT] [--required-number INT] [--file-prefix STRING] [--images-format STRING] [--images-quality INT] [--min-dim STRING]    
-                [--sort STRING] [--echo-only] [--remove-extra] [--starting-number INT] [--verbose] [--include-index] [--remove-duplicate] [--debug-mode]  
+usage: crawl.py [-h] [--engine {Google,Bing,Baidu}] [--driver {chrome_headless,chrome,phantomjs}]
+                [--max-number MAX_NUMBER] [--num-threads NUM_THREADS] [--timeout TIMEOUT] [--output OUTPUT]
+                [--safe-mode] [--face-only] [--proxy_http PROXY_HTTP] [--proxy_socks5 PROXY_SOCKS5]
+                [--type {clipart,linedrawing,photograph}] [--color COLOR] [--engines STRING] [--keywords STRING]       
+                [--format-filter STRING] [--file DIR] [--input-type {txt,csv,tsv,excel,stdin,cmd}] [--begin INT]       
+                [--end INT] [--column-index INT] [--column-name STRING] [--exclude-header] [--max-attempts INT]        
+                [--required-number INT] [--file-prefix STRING] [--images-format STRING] [--images-quality INT]
+                [--min-dim STRING] [--sort STRING] [--echo-only] [--remove-extra] [--starting-number INT] [--verbose]  
+                [--include-index] [--remove-duplicate] [--debug-mode]
                 [stdin]
 
 Image Downloader
@@ -43,7 +46,7 @@ optional arguments:
   --output OUTPUT, -o OUTPUT
                         Output directory to save downloaded images.
   --safe-mode, -S       Turn on safe search mode. (Only effective in Google)
-  --face-only, -F       Only search for
+  --face-only, -F       Only search for faces (only available in Google)
   --proxy_http PROXY_HTTP, -ph PROXY_HTTP
                         Set http proxy (e.g. 192.168.0.2:8080)
   --proxy_socks5 PROXY_SOCKS5, -ps PROXY_SOCKS5
@@ -71,7 +74,8 @@ optional arguments:
   --file-prefix STRING  File prefix (default: current keyword).
   --images-format STRING
                         The format of output images. Default: not converted.
-  --images-quality INT  Only required when --images-format is specified. (Default: 95 when --images-format is specifed)
+  --images-quality INT  Only required when --images-format is specified. (Default: 95 when --images-format is
+                        specifed)
   --min-dim STRING      Minimum dimension of the image (default: none)
   --sort STRING         The criteria for sorting (default: rank,asc). Example: resolution,desc
   --echo-only           Only output the keywords in comma-separated format.
