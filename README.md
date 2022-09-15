@@ -16,14 +16,16 @@ The command includes command from sczhengyabin's Image Downloader as well as the
 
 ```bash
 usage: crawl.py [-h] [--engine {Google,Bing,Baidu}] [--driver {chrome_headless,chrome,phantomjs}]
-                [--max-number MAX_NUMBER] [--num-threads NUM_THREADS] [--timeout TIMEOUT] [--output OUTPUT]
-                [--safe-mode] [--face-only] [--proxy_http PROXY_HTTP] [--proxy_socks5 PROXY_SOCKS5]
-                [--type {clipart,linedrawing,photograph}] [--color COLOR] [--engines STRING] [--keywords STRING]       
-                [--format-filter STRING] [--file DIR] [--input-type {txt,csv,tsv,excel,stdin,cmd}] [--begin INT]       
-                [--end INT] [--column-index INT] [--column-name STRING] [--exclude-header] [--max-attempts INT]        
-                [--required-number INT] [--file-prefix STRING] [--images-format STRING] [--images-quality INT]
-                [--min-dim STRING] [--sort STRING] [--echo-only] [--remove-extra] [--starting-number INT] [--verbose]  
-                [--include-index] [--remove-duplicate] [--debug-mode]
+                [--max-number MAX_NUMBER] [--num-threads NUM_THREADS] [--timeout TIMEOUT]
+                [--output OUTPUT] [--safe-mode] [--face-only] [--proxy_http PROXY_HTTP]
+                [--proxy_socks5 PROXY_SOCKS5] [--type {clipart,linedrawing,photograph}]
+                [--color COLOR] [--engines STRING] [--keywords STRING] [--format-filter STRING]      
+                [--file DIR] [--input-type {txt,csv,tsv,excel,stdin,cmd}] [--begin INT] [--end INT]  
+                [--column-index INT] [--column-name STRING] [--exclude-header] [--max-attempts INT]  
+                [--required-number INT] [--file-prefix STRING] [--images-format STRING]
+                [--images-quality INT] [--min-dim STRING] [--sort STRING] [--echo-only]
+                [--remove-extra] [--starting-number INT] [--include-index] [--remove-duplicate]      
+                [--verbose] [--debug-mode]
                 [stdin]
 
 Image Downloader
@@ -59,7 +61,7 @@ optional arguments:
   --keywords STRING, -k STRING
                         Keywords separated by comma (,).
   --format-filter STRING
-                        case insensitive formats separated by comma (,)
+                        Case insensitive formats separated by comma (,)
   --file DIR, -f DIR    Path to the input file.
   --input-type {txt,csv,tsv,excel,stdin,cmd}
                         File type (default: inferred).
@@ -68,23 +70,41 @@ optional arguments:
   --column-index INT    The index of the desired column.
   --column-name STRING  The name of the desired column.
   --exclude-header      Exclude the header from the input file.
-  --max-attempts INT    Maximum number of attempts allowed to get the required number of images.
+  --max-attempts INT    Maximum number of attempts allowed to get the required number of images.     
   --required-number INT
-                        Required number of images to download for the keywords (default: any).
+                        Required number of images to download for the keywords (default: any).       
   --file-prefix STRING  File prefix (default: current keyword).
   --images-format STRING
                         The format of output images. Default: not converted.
-  --images-quality INT  Only required when --images-format is specified. (Default: 95 when --images-format is
-                        specifed)
-  --min-dim STRING      Minimum dimension of the image (default: none)
+  --images-quality INT  Only required when --images-format is specified. (Default: 95 when
+                        --images-format is specifed)
+  --min-dim STRING      Minimum dimension of the image (default: none). Example: 1024,768
   --sort STRING         The criteria for sorting (default: rank,asc). Example: resolution,desc
   --echo-only           Only output the keywords in comma-separated format.
   --remove-extra        Only keep the minimum number of images.
   --starting-number INT
                         Your preference of the starting number (default: 1).
-  --verbose             Show debug information.
   --include-index       Include the index in the folder name.
   --remove-duplicate    Remove duplicate images.
+  --verbose             Show debug information.
+  --debug-mode          Show debug information (not recommended).
+(crawler) PS D:\Work\BY\Image-Downloader-Plus>
+  --required-number INT
+                        Required number of images to download for the keywords (default: any).       
+  --file-prefix STRING  File prefix (default: current keyword).
+  --images-format STRING
+                        The format of output images. Default: not converted.
+  --images-quality INT  Only required when --images-format is specified. (Default: 95 when
+                        --images-format is specifed)
+  --min-dim STRING      Minimum dimension of the image (default: none). Example: 1024,768
+  --sort STRING         The criteria for sorting (default: rank,asc). Example: resolution,desc
+  --echo-only           Only output the keywords in comma-separated format.
+  --remove-extra        Only keep the minimum number of images.
+  --starting-number INT
+                        Your preference of the starting number (default: 1).
+  --include-index       Include the index in the folder name.
+  --remove-duplicate    Remove duplicate images.
+  --verbose             Show debug information.
   --debug-mode          Show debug information (not recommended).
 ```
 

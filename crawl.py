@@ -62,7 +62,7 @@ if __name__ == '__main__':
         metavar='STRING',
         required=False,
         default='jpg,jpeg,png,webp',
-        help='case insensitive formats separated by comma (,)')
+        help='Case insensitive formats separated by comma (,)')
     parser.add_argument(
         '--file',
         '-f',
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         metavar='STRING',
         required=False,
         default='0,0',
-        help='Minimum dimension of the image (default: none)')
+        help='Minimum dimension of the image (default: none). Example: 1024,768')
     parser.add_argument(
         '--sort',
         metavar='STRING',
@@ -173,11 +173,6 @@ if __name__ == '__main__':
         type=int,
         help='Your preference of the starting number (default: 1).')
     parser.add_argument(
-        '--verbose',
-        action='store_true',
-        required=False,
-        help='Show debug information.')
-    parser.add_argument(
         '--include-index',
         action='store_true',
         required=False,
@@ -187,6 +182,11 @@ if __name__ == '__main__':
         action='store_true',
         required=False,
         help='Remove duplicate images.')
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        required=False,
+        help='Show debug information.')
     parser.add_argument(
         '--debug-mode',
         action='store_true',
